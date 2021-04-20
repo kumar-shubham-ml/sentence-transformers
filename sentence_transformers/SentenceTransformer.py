@@ -449,7 +449,7 @@ class SentenceTransformer(nn.Sequential):
             callback: Callable[[float, int, int], None] = None,
             show_progress_bar: bool = True,
             save_each_epoch: bool = True,
-            evaluation_func = None
+            model_callbacks = None
             ):
         """
         Train the model with the given training objective
@@ -592,8 +592,9 @@ class SentenceTransformer(nn.Sequential):
             if save_each_epoch and output_path is not None:
                 self.save(f"{output_path}-epoch{epoch}")
                 
-            if evaluation_func is not None:
-                evaluation_func(self)
+            if model_callbacks is not None:
+                for func in model_callbacks:
+                    func(self)
 
         if evaluator is None and output_path is not None and save_each_epoch:   #No evaluator, but output path: save final model version
             self.save(output_path)
