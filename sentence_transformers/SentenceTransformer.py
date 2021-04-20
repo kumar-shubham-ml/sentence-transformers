@@ -590,7 +590,7 @@ class SentenceTransformer(nn.Sequential):
             self._eval_during_training(evaluator, output_path, save_best_model, epoch, -1, callback)
             
             if save_each_epoch and output_path is not None:
-                self.save(f"{output_path}-epoch{epoch}")
+                self.save(f"{output_path}/epoch{epoch}")
                 
             if model_callbacks is not None:
                 for func in model_callbacks:
