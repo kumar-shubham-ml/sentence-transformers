@@ -447,7 +447,8 @@ class SentenceTransformer(nn.Sequential):
             max_grad_norm: float = 1,
             use_amp: bool = False,
             callback: Callable[[float, int, int], None] = None,
-            show_progress_bar: bool = True
+            show_progress_bar: bool = True,
+            save_each_epoch: bool = True
             ):
         """
         Train the model with the given training objective
@@ -473,6 +474,7 @@ class SentenceTransformer(nn.Sequential):
                 It must accept the following three parameters in this order:
                 `score`, `epoch`, `steps`
         :param show_progress_bar: If True, output a tqdm progress bar
+        :param save_each_epoch: If True, save each epoch
         """
 
         if use_amp:
@@ -585,8 +587,11 @@ class SentenceTransformer(nn.Sequential):
                         loss_model.train()
 
             self._eval_during_training(evaluator, output_path, save_best_model, epoch, -1, callback)
+            
+            if save_each_epoch and output_path is not None:
+                self.save(f"{output_path}-epoch{epoch}")
 
-        if evaluator is None and output_path is not None:   #No evaluator, but output path: save final model version
+        if evaluator is None and output_path is not None and save_each_epoch:   #No evaluator, but output path: save final model version
             self.save(output_path)
 
     def evaluate(self, evaluator: SentenceEvaluator, output_path: str = None):
