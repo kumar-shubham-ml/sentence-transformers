@@ -449,7 +449,8 @@ class SentenceTransformer(nn.Sequential):
             callback: Callable[[float, int, int], None] = None,
             show_progress_bar: bool = True,
             save_each_epoch: bool = True,
-            model_callbacks = None
+            model_callbacks = None,
+            restart_training = True
             ):
         """
         Train the model with the given training objective
@@ -476,6 +477,7 @@ class SentenceTransformer(nn.Sequential):
                 `score`, `epoch`, `steps`
         :param show_progress_bar: If True, output a tqdm progress bar
         :param save_each_epoch: If True, save each epoch
+        :param restart_training: If True, start training from beginning with new optimiser and scheduler, else, retain old optimiser and scheduler
         """
 
         if use_amp:
@@ -503,24 +505,28 @@ class SentenceTransformer(nn.Sequential):
             steps_per_epoch = min([len(dataloader) for dataloader in dataloaders])
 
         num_train_steps = int(steps_per_epoch * epochs)
+        
+        if restart_training:
+            # Prepare optimizers
+            optimizers = []
+            schedulers = []
+            for loss_model in loss_models:
+                param_optimizer = list(loss_model.named_parameters())
 
-        # Prepare optimizers
-        optimizers = []
-        schedulers = []
-        for loss_model in loss_models:
-            param_optimizer = list(loss_model.named_parameters())
+                no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+                optimizer_grouped_parameters = [
+                    {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': weight_decay},
+                    {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+                ]
 
-            no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-            optimizer_grouped_parameters = [
-                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': weight_decay},
-                {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
-            ]
+                optimizer = optimizer_class(optimizer_grouped_parameters, **optimizer_params)
+                scheduler_obj = self._get_scheduler(optimizer, scheduler=scheduler, warmup_steps=warmup_steps, t_total=num_train_steps)
 
-            optimizer = optimizer_class(optimizer_grouped_parameters, **optimizer_params)
-            scheduler_obj = self._get_scheduler(optimizer, scheduler=scheduler, warmup_steps=warmup_steps, t_total=num_train_steps)
-
-            optimizers.append(optimizer)
-            schedulers.append(scheduler_obj)
+                optimizers.append(optimizer)
+                schedulers.append(scheduler_obj)
+        else:
+            optimizers = self.optimizers
+            schedulers = self.schedulers
 
 
         global_step = 0
@@ -595,6 +601,11 @@ class SentenceTransformer(nn.Sequential):
             if model_callbacks is not None:
                 for func in model_callbacks:
                     func(self)
+                    
+            # Save Optimiser and Scheduler
+            self.optimizers = optimizers
+            self.schedulers = schedulers
+            
 
         if evaluator is None and output_path is not None and save_each_epoch:   #No evaluator, but output path: save final model version
             self.save(output_path)
