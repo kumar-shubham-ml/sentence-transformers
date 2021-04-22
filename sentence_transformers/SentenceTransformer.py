@@ -510,6 +510,7 @@ class SentenceTransformer(nn.Sequential):
             # Prepare optimizers
             optimizers = []
             schedulers = []
+            start_epoch = 0
             for loss_model in loss_models:
                 param_optimizer = list(loss_model.named_parameters())
 
@@ -527,6 +528,7 @@ class SentenceTransformer(nn.Sequential):
         else:
             optimizers = self.optimizers
             schedulers = self.schedulers
+            start_epoch = self.epochs_done
 
 
         global_step = 0
@@ -535,7 +537,7 @@ class SentenceTransformer(nn.Sequential):
         num_train_objectives = len(train_objectives)
 
         skip_scheduler = False
-        for epoch in trange(epochs, desc="Epoch", disable=not show_progress_bar):
+        for epoch in trange(start_epoch, start_epoch+epochs, desc="Epoch", disable=not show_progress_bar):
             training_steps = 0
 
             for loss_model in loss_models:
@@ -605,6 +607,7 @@ class SentenceTransformer(nn.Sequential):
             # Save Optimiser and Scheduler
             self.optimizers = optimizers
             self.schedulers = schedulers
+            self.epochs_done = epoch+1
             
 
         if evaluator is None and output_path is not None and save_each_epoch:   #No evaluator, but output path: save final model version
