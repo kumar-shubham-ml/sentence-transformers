@@ -451,6 +451,7 @@ class SentenceTransformer(nn.Sequential):
             save_each_epoch: bool = True,
             model_callbacks = None,
             restart_training = False,
+            max_epochs = 50,
             ):
         """
         Train the model with the given training objective
@@ -503,14 +504,13 @@ class SentenceTransformer(nn.Sequential):
 
         if steps_per_epoch is None or steps_per_epoch == 0:
             steps_per_epoch = min([len(dataloader) for dataloader in dataloaders])
-
-        num_train_steps = int(steps_per_epoch * epochs)
-        
+            
         if restart_training:
             # Prepare optimizers
             optimizers = []
             schedulers = []
             start_epoch = 0
+            num_train_steps = int(steps_per_epoch * max_epochs)
             for loss_model in loss_models:
                 param_optimizer = list(loss_model.named_parameters())
 
