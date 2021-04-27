@@ -479,6 +479,7 @@ class SentenceTransformer(nn.Sequential):
         :param show_progress_bar: If True, output a tqdm progress bar
         :param save_each_epoch: If True, save each epoch
         :param restart_training: If True, start training from beginning with new optimiser and scheduler, else, retain old optimiser and scheduler
+        :param max_epochs: Maximum Epochs model will be trained for !!
         """
 
         if use_amp:
