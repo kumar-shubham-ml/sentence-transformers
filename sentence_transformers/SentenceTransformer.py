@@ -450,7 +450,7 @@ class SentenceTransformer(nn.Sequential):
             show_progress_bar: bool = True,
             save_each_epoch: bool = True,
             model_callbacks = None,
-            restart_training = True
+            restart_training = False,
             ):
         """
         Train the model with the given training objective
